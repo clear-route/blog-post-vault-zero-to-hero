@@ -1,6 +1,6 @@
 # Introduction
 This is a fictional story of a team that got ripped apart after a security audit for hardcoding database credentials in plaintext for their web app.
-Here is how they went from no secrets management solution at all to a dynamic, scalable, and secure workflow using HashiCorp `Vault`.
+Read how they went in 5 steps from no secrets management solution at all to a dynamic, scalable, and secure workflow using HashiCorp `Vault`.
 
 In this blog post, we will cover the following topics:
 * Configuring Vault AppRole authentication
@@ -12,7 +12,7 @@ In this blog post, we will cover the following topics:
 
 # The Application
 First, we need to talk about the application that is going to be used in this blog post.
-The application itself is fairly simple, with approximately [~100LOC](https://github.com/clear-route/blog-post-vault-zero-to-hero/blob/main/demo-app/main.go).
+The application itself is fairly simple, with approximately [~100LOC](https://github.com/clear-route/hashicorp-vault-from-zero-to-hero/blob/main/demo-app/main.go).
 It is a web app that takes a couple of environment variables (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` and `DB_NAME`) and connects to a Postgres database.
 It then displays the credentials and the connection status on a web server running on port 9090.
 
@@ -48,11 +48,11 @@ To follow the instructions, you will need the following tools installed:
 All required scripts and configuration are available in this repository. You can simply clone it:
 
 ```bash
-> git clone https://github.com/clear-route/blog-post-vault-zero-to-hero.git
-> cd blog-post-vault-zero-to-hero.git
+> git clone https://github.com/clear-route/hashicorp-vault-from-zero-to-hero.git
+> cd hashicorp-vault-from-zero-to-hero
 ```
 
-The [`Makefile`](https://github.com/clear-route/blog-post-vault-zero-to-hero/blob/main/Makefile) contains all required commands to spin up each part for your convenience.
+The [`Makefile`](https://github.com/clear-route/hashicorp-vault-from-zero-to-hero/blob/main/Makefile) contains all required commands to spin up each part for your convenience.
 
 ## Kubernetes
 We will need a local `Kubernetes` cluster.
@@ -106,7 +106,7 @@ HA Enabled      false
 If you`ve hit a dead-end, you can always reset your local environment:
 <!--- {{ file "scripts/cleanup.sh" | truncate | code "bash" }} --->
 
-# Part 01: Status Quo - Hardcoded Static Credentials in Plaintext
+# Status Quo: Hardcoded Static Credentials in Plaintext
 Alright, we're good to go. The status quo for our fictional app-team and their secrets management could not be worse and Im not even kidding - **Never to this - not even in development.**
 
 The team simply provided the database credentials to their App by specifying the required environment variables in the `Deployment` manifest:
