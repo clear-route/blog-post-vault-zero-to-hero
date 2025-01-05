@@ -2,7 +2,7 @@
 
 # Start Vault Container
 docker run -d --rm \
-    --cap-add=IPC_LOCK \
+	--cap-add=IPC_LOCK \
 	--name vault \
 	-p 8200:8200 \
 	-e VAULT_DEV_ROOT_TOKEN_ID=root \

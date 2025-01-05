@@ -12,11 +12,11 @@ In this blog post, we will cover the following topics:
 
 # The Application
 First, we need to talk about the application that is going to be used in this blog post.
-The application itself is fairly simple, with approximately [~100LOC](./demo-app/main.go).
+The application itself is fairly simple, with approximately [~100LOC](https://github.com/clear-route/blog-post-vault-zero-to-hero/blob/main/demo-app/main.go).
 It is a web app that takes a couple of environment variables (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` and `DB_NAME`) and connects to a Postgres database.
 It then displays the credentials and the connection status on a web server running on port 9090.
 
-The app is containerized (`falcosuessgott/vault-from-zero-to-hero`), meaning it will be deployed as a Deployment in a `Kubernetes` cluster.
+The app is containerized ([`falcosuessgott/vault-from-zero-to-hero`](https://hub.docker.com/r/falcosuessgott/vault-from-zero-to-hero)), meaning it will be deployed as a Deployment in a `Kubernetes` cluster.
 Once the `demo-app` is deployed and working with the provided Postgres credentials, a web server will display a short status message:
 
 ```bash
@@ -45,15 +45,14 @@ To follow the instructions, you will need the following tools installed:
 - `jq`
 
 ## Repository
-All required scripts and configuration are available in this [repository](https://clear-route/blog-post-vault-zero-to-hero.git).
-You can simply clone it:
+All required scripts and configuration are available in this repository. You can simply clone it:
 
 ```bash
-> git clone https://clear-route/blog-post-vault-zero-to-hero.git
+> git clone https://github.com/clear-route/blog-post-vault-zero-to-hero.git
 > cd blog-post-vault-zero-to-hero.git
 ```
 
-The [`Makefile`](./Makefile) contains all required commands to spin up each part for your convenience.
+The [`Makefile`](https://github.com/clear-route/blog-post-vault-zero-to-hero/blob/main/Makefile) contains all required commands to spin up each part for your convenience.
 
 ## Kubernetes
 We will need a local `Kubernetes` cluster.
@@ -105,7 +104,7 @@ Lastly, a `Vault` instance is required. I will use the `Vault` `docker` containe
 
 # Start Vault Container
 docker run -d --rm \
-    --cap-add=IPC_LOCK \
+	--cap-add=IPC_LOCK \
 	--name vault \
 	-p 8200:8200 \
 	-e VAULT_DEV_ROOT_TOKEN_ID=root \
