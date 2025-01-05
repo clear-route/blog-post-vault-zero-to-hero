@@ -1,4 +1,4 @@
----
+# manifests/vso.yaml
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultConnection
 metadata:

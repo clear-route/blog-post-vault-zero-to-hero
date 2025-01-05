@@ -1,5 +1,14 @@
+# scripts/setup-vault-k8s-auth.sh
+
 # enable kubernetes auth method
 vault auth enable kubernetes
+
+# create a policy
+vault policy write postgres - <<EOF
+path "secret/data/database/postgres" {
+    capabilities = ["read"]
+}
+EOF
 
 # Get the service account token and CA cert
 K8S_JWT_TOKEN=$(kubectl get secret vault-auth-token -o jsonpath="{.data.token}" | base64 -d)

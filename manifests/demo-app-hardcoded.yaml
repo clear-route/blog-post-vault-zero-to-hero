@@ -1,3 +1,4 @@
+# manifests/demo-app-hardcoded.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -22,7 +23,7 @@ spec:
           env:
             # This is bad - do not do this!
             - name: DB_HOST
-              value: "172.17.0.1" # fix this using host.docker.internal
+              value: host.docker.internal
             - name: DB_PORT
               value: "5432"
             - name: DB_USER

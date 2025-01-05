@@ -1,3 +1,5 @@
+# scripts/setup-vso.sh
+
 # install the VSO Helm chart
 helm repo add hashicorp https://helm.releases.hashicorp.com
 
@@ -10,6 +12,13 @@ helm install \
     --create-namespace \
     --namespace vso \
     vso hashicorp/vault-secrets-operator
+
+# wait for the ESM pods to be ready
+kubectl wait \
+   --for=condition=ready pod \
+   -l app.kubernetes.io/instance=vso \
+   --timeout=180s \
+   -n vso
 
 # create a policy
 vault policy write vso - <<EOF

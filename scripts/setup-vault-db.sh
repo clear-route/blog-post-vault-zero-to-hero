@@ -1,3 +1,5 @@
+# scripts/setup-vault-db.sh
+
 # enable database secrets engine
 vault secrets enable database
 
