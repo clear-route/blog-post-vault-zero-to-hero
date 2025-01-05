@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  labels:
+    app: demo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-app
+  template:
+    metadata:
+      labels:
+        app: demo-app
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-inject-secret-db-creds: "database/creds/postgres"
+        vault.hashicorp.com/agent-inject-template-db-creds: |
+          {{- with secret "database/creds/postgres" -}}
+          postgres://{{ .Data.username }}:{{ .Data.password }}@postgres:5432/appdb?sslmode=disable
+          {{- end }}
+        vault.hashicorp.com/role: "vai"
+        vault.hashicorp.com/tls-skip-verify: "true"
+    spec:
+      serviceAccountName: vault-auth
+      containers:
+        - name: vault-from-zero-to-hero
+          image: falcosuessgott/vault-from-zero-to-hero
+          command:
+            ['sh', '-c']
+          args:
+            ['source /vault/secrets/db-creds && /demo-app']
+          ports:
+            - containerPort: 9090
+          env:
+            - name: DB_HOST
+              value: "172.17.0.1" # fix this using host.docker.internal
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: vault

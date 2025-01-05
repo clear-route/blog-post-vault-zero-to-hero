@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  labels:
+    app: demo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-app
+  template:
+    metadata:
+      labels:
+        app: demo-app
+    spec:
+      containers:
+        - name: vault-from-zero-to-hero
+          image: falcosuessgott/vault-from-zero-to-hero
+          ports:
+            - containerPort: 9090
+          env:
+            - name: DB_HOST
+              value: "172.17.0.1" # fix this using host.docker.internal
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: vault
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: dynamic-db-postgres-creds
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dynamic-db-postgres-creds
+                  key: password

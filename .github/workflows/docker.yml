@@ -23,6 +23,6 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           push: true
-          context: demo-app/Dockerfile
+          context: demo-app/.
           platforms: linux/amd64,linux/arm64
           tags: falcosuessgott/vault-from-zero-to-hero:latest
