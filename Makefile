@@ -6,18 +6,13 @@ help: ## list makefile targets
 
 .PHONY: postgres
 postgres: ## start postgres container
-	docker run --rm --name postgres \
-		-p 5432:5432 \
-		-e POSTGRES_USER=postgres \
-		-e POSTGRES_PASSWORD=P@ssw0rd \
-		-e POSTGRES_DB=vault \
-		postgres
+	./scripts/setup-postgres.sh
 
 .PHONY: vault
 vault: ## start vault container
-	docker run --rm --name vault \
-		-p 8200:8200 \
-		--link postgres:postgres \
-		-e VAULT_DEV_ROOT_TOKEN_ID=root \
-		-e VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200 \
-		hashicorp/vault
+	./scripts/setup-vault.sh
+
+.PHONY: kind
+kind: ## start a local kind cluster
+	./scripts/setup-kind.sh
+
