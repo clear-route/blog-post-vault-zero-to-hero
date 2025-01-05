@@ -15,4 +15,3 @@ vault: ## start vault container
 .PHONY: kind
 kind: ## start a local kind cluster
 	./scripts/setup-kind.sh
-

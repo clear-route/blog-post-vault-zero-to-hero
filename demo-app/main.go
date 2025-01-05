@@ -52,25 +52,23 @@ func main() {
 		log.Fatalf("Failed to open the database: %v", err)
 	}
 
+	slog.Info("connected to database", slog.String("host", dbHost), slog.String("port", dbPort), slog.String("user", dbUser))
+
 	defer db.Close()
 
 	mux := &http.ServeMux{}
 	mux.HandleFunc("/", httplog.LoggingMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		var resp bytes.Buffer
 
-		connected := "true"
+		connected := "success"
 		if err := db.Ping(); err != nil {
 			connected = fmt.Sprintf("false (%v)", err)
 		}
 
-		resp.WriteString("<html>\n<head>\n<title>Demo-App</title>\n</head>\n<body>\n")
-
-		resp.WriteString(fmt.Sprintf("DB: %s:%s<br>", dbHost, dbPort))
-		resp.WriteString(fmt.Sprintf("User: %s<br>", dbUser))
-		resp.WriteString(fmt.Sprintf("Password: %s<br>", dbPassword))
-		resp.WriteString(fmt.Sprintf("Ping: %v<br>", connected))
-
-		resp.WriteString("</body>\n</html>\n")
+		resp.WriteString(fmt.Sprintf("DB: %s:%s\n", dbHost, dbPort))
+		resp.WriteString(fmt.Sprintf("User: %s\n", dbUser))
+		resp.WriteString(fmt.Sprintf("Password: %s\n", dbPassword))
+		resp.WriteString(fmt.Sprintf("Ping: %v\n", connected))
 
 		w.Write(resp.Bytes())
 
@@ -96,7 +94,6 @@ func main() {
 	<-done
 	slog.Info("shutting down server")
 
-	//nolint: mnd
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
