@@ -1,5 +1,11 @@
 # scripts/setup-vai.sh
 
+# install the VSO Helm chart
+helm repo add hashicorp https://helm.releases.hashicorp.com
+
+# fetch charts
+helm repo update
+
 # install the  Helm chart
 helm install vai hashicorp/vault \
     --create-namespace \

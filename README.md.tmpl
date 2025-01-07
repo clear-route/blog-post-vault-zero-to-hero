@@ -33,6 +33,9 @@ This `demo-app` will be used throughout this post to demonstrate how the databas
 You are welcome to perform all the steps mentioned here by yourself.
 I will describe how to set up all components and perform all configurations locally using `docker` and `kind`.
 
+## TLDR
+If you're too lazy to follow the instructions, just check out the [`E2E`](https://github.com/clear-route/hashicorp-vault-from-zero-to-hero/actions/workflows/e2e.yml?query=branch%3Amain) Github Action pipelines that run all the steps mentioned in this blog post (navigate to the `deploy` step).
+
 ## Prerequisites
 To follow the instructions, you will need the following tools installed:
 
@@ -81,7 +84,7 @@ Lastly, a `Vault` instance is required. I will use the `Vault` `docker` containe
 <!--- {{ file "scripts/setup-vault.sh" | truncate | code "bash" }} --->
 
 Once you set the Vault environment vars:
-<!--- {{ file ".envrc" | code "bash" }} --->
+<!--- {{ file ".envrc" | truncate | code "bash" }} --->
 
 a `vault status` should return a healthy `Vault` instance:
 

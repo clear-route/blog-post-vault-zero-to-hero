@@ -61,8 +61,11 @@ func main() {
 		var resp bytes.Buffer
 
 		connected := "success"
+		status := http.StatusOK
+
 		if err := db.Ping(); err != nil {
 			connected = fmt.Sprintf("false (%v)", err)
+			status = http.StatusInternalServerError
 		}
 
 		resp.WriteString(fmt.Sprintf("DB: %s:%s\n", dbHost, dbPort))
@@ -70,6 +73,7 @@ func main() {
 		resp.WriteString(fmt.Sprintf("Password: %s\n", dbPassword))
 		resp.WriteString(fmt.Sprintf("Ping: %v\n", connected))
 
+		w.WriteHeader(status)
 		w.Write(resp.Bytes())
 
 	}))

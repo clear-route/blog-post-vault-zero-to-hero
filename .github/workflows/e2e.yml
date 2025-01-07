@@ -1,0 +1,254 @@
+name: E2E Testing
+
+on:
+  push:
+
+jobs:
+  # hardcoded secrets
+  status-quo:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: P@ssw0rd
+          POSTGRES_DB: vault
+
+      vault:
+        image: hashicorp/vault:1.18.3
+        ports:
+          - 8200:8200
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: root
+        credentials:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+        options: >-
+          --add-host host.docker.internal:host-gateway
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: vault-from-zero-to-hero
+          config: manifests/kind-config.yml
+
+      - name: deploy
+        run: |
+          set -ex
+          make status-quo
+
+  # ESM with Token auth
+  part-01:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: P@ssw0rd
+          POSTGRES_DB: vault
+
+      vault:
+        image: hashicorp/vault:1.18.3
+        ports:
+          - 8200:8200
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: root
+        credentials:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+        options: >-
+          --add-host host.docker.internal:host-gateway
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: eLco/setup-vault@v1
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: vault-from-zero-to-hero
+          config: manifests/kind-config.yml
+
+      - name: deploy
+        run: |
+          set -ex
+          make part-01
+        env:
+          VAULT_ADDR: http://127.0.0.1:8200
+          VAULT_TOKEN: root
+
+  # ESM with Approle auth
+  part-02:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: P@ssw0rd
+          POSTGRES_DB: vault
+
+      vault:
+        image: hashicorp/vault:1.18.3
+        ports:
+          - 8200:8200
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: root
+        credentials:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+        options: >-
+          --add-host host.docker.internal:host-gateway
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: eLco/setup-vault@v1
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: vault-from-zero-to-hero
+          config: manifests/kind-config.yml
+
+      - name: deploy
+        run: |
+          set -ex
+          make part-02
+        env:
+          VAULT_ADDR: http://127.0.0.1:8200
+          VAULT_TOKEN: root
+
+  # ESM with Kubernetes auth
+  part-03:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: P@ssw0rd
+          POSTGRES_DB: vault
+
+      vault:
+        image: hashicorp/vault:1.18.3
+        ports:
+          - 8200:8200
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: root
+        credentials:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+        options: >-
+          --add-host host.docker.internal:host-gateway
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: eLco/setup-vault@v1
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: vault-from-zero-to-hero
+          config: manifests/kind-config.yml
+
+      - name: deploy
+        run: |
+          set -ex
+          make part-03
+        env:
+          VAULT_ADDR: http://127.0.0.1:8200
+          VAULT_TOKEN: root
+
+  # VSO with dynamic db credentials
+  part-04:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: P@ssw0rd
+          POSTGRES_DB: vault
+
+      vault:
+        image: hashicorp/vault:1.18.3
+        ports:
+          - 8200:8200
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: root
+        credentials:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+        options: >-
+          --add-host host.docker.internal:host-gateway
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: eLco/setup-vault@v1
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: vault-from-zero-to-hero
+          config: manifests/kind-config.yml
+
+      - name: deploy
+        run: |
+          set -ex
+          make part-04
+        env:
+          VAULT_ADDR: http://127.0.0.1:8200
+          VAULT_TOKEN: root
+
+  # VAI with dynamic db credentials
+  part-05:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: P@ssw0rd
+          POSTGRES_DB: vault
+
+      vault:
+        image: hashicorp/vault:1.18.3
+        ports:
+          - 8200:8200
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: root
+        credentials:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+        options: >-
+          --add-host host.docker.internal:host-gateway
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: eLco/setup-vault@v1
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: vault-from-zero-to-hero
+          config: manifests/kind-config.yml
+
+      - name: deploy
+        run: |
+          set -ex
+          make part-05
+        env:
+          VAULT_ADDR: http://127.0.0.1:8200
+          VAULT_TOKEN: root

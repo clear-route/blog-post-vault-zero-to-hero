@@ -20,16 +20,23 @@ kind: ## start a local kind cluster
 clean: ## clean up all resources
 	./scripts/cleanup.sh || true
 
-.PHONY: part-01
-part-01: clean postgres vault kind ## run part 01 - hardcoded credentials
+.PHONY: infra
+infra: kind postgres vault ## start all infra components
+
+.PHONY: status-quo
+status-quo: ## run status-quo - hardcoded credentials
 	# deploy app
 	kubectl apply -f manifests/demo-app-hardcoded.yaml
+	kubectl wait \
+		--for=condition=ready pod \
+		-l app=demo-app \
+		--timeout=180s
 
 	# verify its working
-	kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
+	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
 
-.PHONY: part-02
-part-02: clean postgres vault kind ## run part 02 - esm with token auth
+.PHONY: part-01
+part-01: ## run part 01 - esm with token auth
 	# setup vault
 	vault kv put secret/database/postgres username=postgres password=P@ssw0rd
 
@@ -40,12 +47,16 @@ part-02: clean postgres vault kind ## run part 02 - esm with token auth
 
 	# deploy app
 	kubectl apply -f manifests/demo-app-k8s-secret.yaml
+	kubectl wait \
+		--for=condition=ready pod \
+		-l app=demo-app \
+		--timeout=180s
 
 	# verify its working
-	kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
+	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
 
-.PHONY: part-03
-part-03: clean postgres vault kind ## run part 03 - esm with approle auth
+.PHONY: part-02
+part-02: ## run part 02 - esm with approle auth
 	# setup vault
 	vault kv put secret/database/postgres username=postgres password=P@ssw0rd
 	./scripts/setup-vault-approle-auth.sh
@@ -57,12 +68,16 @@ part-03: clean postgres vault kind ## run part 03 - esm with approle auth
 
 	# deploy app
 	kubectl apply -f manifests/demo-app-k8s-secret.yaml
+	kubectl wait \
+		--for=condition=ready pod \
+		-l app=demo-app \
+		--timeout=180s
 
 	# verify its working
-	kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
+	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
 
-.PHONY: part-04
-part-04: clean postgres vault kind ## run part 04 - esm with k8s auth
+.PHONY: part-03
+part-03:  ## run part 03 - esm with k8s auth
 	# setup vault
 	vault kv put secret/database/postgres username=postgres password=P@ssw0rd
 	kubectl apply -f manifests/vault-crb.yml
@@ -75,12 +90,16 @@ part-04: clean postgres vault kind ## run part 04 - esm with k8s auth
 
 	# deploy app
 	kubectl apply -f manifests/demo-app-k8s-secret.yaml
+	kubectl wait \
+		--for=condition=ready pod \
+		-l app=demo-app \
+		--timeout=180s
 
 	# verify its working
-	kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
+	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
 
-.PHONY: part-05
-part-05: clean postgres vault kind ## run part 05 - vso with dynamic db credentials
+.PHONY: part-04
+part-04: ## run part 04 - vso with dynamic db credentials
 	# setup vault
 	./scripts/setup-vault-db.sh
 	kubectl apply -f manifests/vault-crb.yml
@@ -91,13 +110,17 @@ part-05: clean postgres vault kind ## run part 05 - vso with dynamic db credenti
 	kubectl apply -f manifests/vso.yaml
 
 	# deploy app
-	kubectl apply -f manifests/demo-app-vso-dynamic-db.yaml
+	kubectl apply -f manifests/demo-app-vso.yaml
+	kubectl wait \
+		--for=condition=ready pod \
+		-l app=demo-app \
+		--timeout=180s
 
 	# verify its working
-	kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
+	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
 
-.PHONY: part-06
-part-06: clean postgres vault kind ## run part 06 - vai with dynamic db credentials
+.PHONY: part-05
+part-05: ## run part 05 - vai with dynamic db credentials
 	# setup vault
 	./scripts/setup-vault-db.sh
 	kubectl apply -f manifests/vault-crb.yml
@@ -108,12 +131,22 @@ part-06: clean postgres vault kind ## run part 06 - vai with dynamic db credenti
 
 	# deploy app
 	kubectl apply -f manifests/demo-app-vai.yaml
+	kubectl wait \
+		--for=condition=ready pod \
+		-l app=demo-app \
+		--timeout=180s
 
 	# verify its working
-	kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -c vault-from-zero-to-hero -- curl -s localhost:9090
+	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -c vault-from-zero-to-hero -- curl -s localhost:9090
 
 	# scale deployment
 	kubectl scale deployment demo-app --replicas=5
+	kubectl wait \
+		--for=condition=ready pod \
+		-l app=demo-app \
+		--timeout=180s
 
 	# verify
-	for pod in $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}'); do echo $pod && kubectl exec $pod -c vault-from-zero-to-hero -- curl -s localhost:9090; done
+	for pod in $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}'); do \
+		echo $$pod && kubectl exec $$pod -c vault-from-zero-to-hero -- curl -s localhost:9090; \
+	done

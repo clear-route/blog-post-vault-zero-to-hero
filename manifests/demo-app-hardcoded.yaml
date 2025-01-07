@@ -21,13 +21,13 @@ spec:
           ports:
             - containerPort: 9090
           env:
-            # This is bad - do not do this!
             - name: DB_HOST
-              value: host.docker.internal
+              value: "172.17.0.1"
             - name: DB_PORT
               value: "5432"
             - name: DB_USER
               value: postgres
+            # This is bad - do not do this!
             - name: DB_PASSWORD
               value: P@ssw0rd
             - name: DB_NAME
