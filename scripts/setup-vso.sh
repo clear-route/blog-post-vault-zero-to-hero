@@ -13,7 +13,7 @@ helm install \
     --namespace vso \
     vso hashicorp/vault-secrets-operator
 
-# wait for the ESM pods to be ready
+# wait for the VSO pods to be ready
 kubectl wait \
    --for=condition=ready pod \
    -l app.kubernetes.io/instance=vso \

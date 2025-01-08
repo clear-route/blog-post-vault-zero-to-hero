@@ -2,7 +2,7 @@ default: help
 
 .PHONY: help
 help: ## list makefile targets
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: postgres
 postgres: ## start postgres container
@@ -23,8 +23,8 @@ clean: ## clean up all resources
 .PHONY: infra
 infra: kind postgres vault ## start all infra components
 
-.PHONY: status-quo
-status-quo: ## run status-quo - hardcoded credentials
+.PHONY: part-00
+part-00: ## run status-quo - hardcoded credentials
 	# deploy app
 	kubectl apply -f manifests/demo-app-hardcoded.yaml
 	kubectl wait \
@@ -33,7 +33,7 @@ status-quo: ## run status-quo - hardcoded credentials
 		--timeout=180s
 
 	# verify its working
-	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
+	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl --fail-with-body -s localhost:9090
 
 .PHONY: part-01
 part-01: ## run part 01 - esm with token auth
@@ -53,7 +53,7 @@ part-01: ## run part 01 - esm with token auth
 		--timeout=180s
 
 	# verify its working
-	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
+	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl --fail-with-body -s localhost:9090
 
 .PHONY: part-02
 part-02: ## run part 02 - esm with approle auth
@@ -74,7 +74,7 @@ part-02: ## run part 02 - esm with approle auth
 		--timeout=180s
 
 	# verify its working
-	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
+	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl --fail-with-body -s localhost:9090
 
 .PHONY: part-03
 part-03:  ## run part 03 - esm with k8s auth
@@ -96,7 +96,7 @@ part-03:  ## run part 03 - esm with k8s auth
 		--timeout=180s
 
 	# verify its working
-	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
+	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl --fail-with-body -s localhost:9090
 
 .PHONY: part-04
 part-04: ## run part 04 - vso with dynamic db credentials
@@ -117,10 +117,10 @@ part-04: ## run part 04 - vso with dynamic db credentials
 		--timeout=180s
 
 	# verify its working
-	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
+	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl --fail-with-body -s localhost:9090
 
 .PHONY: part-05
-part-05: ## run part 05 - vai with dynamic db credentials
+part-05: ## run part 05 - vai with dynamic db credentials injected during runtime
 	# setup vault
 	./scripts/setup-vault-db.sh
 	kubectl apply -f manifests/vault-crb.yml
@@ -137,7 +137,7 @@ part-05: ## run part 05 - vai with dynamic db credentials
 		--timeout=180s
 
 	# verify its working
-	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -c vault-from-zero-to-hero -- curl -s localhost:9090
+	kubectl exec $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -c vault-from-zero-to-hero -- curl --fail-with-body -s localhost:9090
 
 	# scale deployment
 	kubectl scale deployment demo-app --replicas=5
@@ -148,5 +148,5 @@ part-05: ## run part 05 - vai with dynamic db credentials
 
 	# verify
 	for pod in $$(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}'); do \
-		echo $$pod && kubectl exec $$pod -c vault-from-zero-to-hero -- curl -s localhost:9090; \
+		echo $$pod && kubectl exec $$pod -c vault-from-zero-to-hero -- curl --fail-with-body -s localhost:9090; \
 	done
