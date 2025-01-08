@@ -1,5 +1,6 @@
 # Introduction
 This is a fictional story of a team that got ripped apart after a security audit for hardcoding database credentials in plaintext for their web app.
+
 Read how they went in 5 steps from no secrets management solution at all to a dynamic, scalable, and secure workflow using HashiCorp `Vault`.
 
 In this blog post, we will cover the following topics:
@@ -12,12 +13,12 @@ In this blog post, we will cover the following topics:
 
 # The Application
 First, we need to talk about the application that is going to be used in this blog post.
-The application itself is fairly simple, with approximately [~100LOC](https://github.com/clear-route/hashicorp-vault-from-zero-to-hero/blob/main/demo-app/main.go).
+The application itself is fairly simple, with [~100LOC](https://github.com/clear-route/hashicorp-vault-from-zero-to-hero/blob/main/demo-app/main.go).
 It is a web app that takes a couple of environment variables (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` and `DB_NAME`) and connects to a Postgres database.
 It then displays the credentials and the connection status on a web server running on port 9090.
 
 The app is containerized ([`falcosuessgott/vault-from-zero-to-hero`](https://hub.docker.com/r/falcosuessgott/vault-from-zero-to-hero)), meaning it will be deployed as a Deployment in a `Kubernetes` cluster.
-Once the `demo-app` is deployed and working with the provided Postgres credentials, a web server will display a short status message:
+Once the `demo-app` is deployed and working with the provided Postgres credentials, the web server will respond with a short status message and return `200` (`OK`) or `500` (error):
 
 ```bash
 > curl localhost:9090
@@ -33,7 +34,7 @@ This `demo-app` will be used throughout this post to demonstrate how the databas
 You are welcome to perform all the steps mentioned here by yourself.
 I will describe how to set up all components and perform all configurations locally using `docker` and `kind`.
 
-## TLDR
+## TL;DR
 If you're too lazy to follow the instructions, just check out the [`E2E`](https://github.com/clear-route/hashicorp-vault-from-zero-to-hero/actions/workflows/e2e.yml?query=branch%3Amain) Github Action pipelines that run all the steps mentioned in this blog post (navigate to the `deploy` step).
 
 ## Prerequisites
@@ -55,7 +56,10 @@ All required scripts and configuration are available in this repository. You can
 > cd hashicorp-vault-from-zero-to-hero
 ```
 
-The [`Makefile`](https://github.com/clear-route/hashicorp-vault-from-zero-to-hero/blob/main/Makefile) contains all required commands to spin up each part for your convenience.
+The [`Makefile`](https://github.com/clear-route/hashicorp-vault-from-zero-to-hero/blob/main/Makefile) contains all required commands to spin up each part for your convenience:
+
+<!--- {{ exec "echo \"> make help\" && make help" | stripansi | truncate | code "bash" }} --->
+
 
 ## Kubernetes
 We will need a local `Kubernetes` cluster.
@@ -110,7 +114,7 @@ If you`ve hit a dead-end, you can always reset your local environment:
 <!--- {{ file "scripts/cleanup.sh" | truncate | code "bash" }} --->
 
 # Status Quo: Hardcoded Static Credentials in Plaintext
-Alright, we're good to go. The status quo for our fictional app-team and their secrets management could not be worse and Im not even kidding - **Never to this - not even in development.**
+Alright, we're good to go. The status quo for our fictional app-team and their secrets management could not be worse and Im not even kidding - **Never do this - not even in development.**
 
 The team simply provided the database credentials to their App by specifying the required environment variables in the `Deployment` manifest:
 <!--- {{ file "manifests/demo-app-hardcoded.yaml" | truncate | code "yaml" }} --->
@@ -120,7 +124,7 @@ Once deployed, we can see a database connection was successfully established usi
 
 ```bash
 > kubectl apply -f manifests/demo-app-hardcoded.yaml
-> kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
+> kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl --fail-with-body -s localhost:9090
 DB: 172.17.0.1:5432
 User: postgres
 Password: P@ssw0rd
@@ -130,7 +134,7 @@ Ping: success
 To no one's surprise, during an audit, the security team found the hardcoded credentials in their `Git` Repository and flagged the application.
 This is where our story of adopting HashiCorp `Vault` begins.
 
-# Part 02: Static Credentials from HashiCorp and the External Secrets Manager - [⭐]
+# Part 01: Static Credentials from HashiCorp and the External Secrets Manager - [⭐]
 After the audit, the team was no longer allowed to hardcode the database credentials in plaintext `Kubernetes` manifests.
 They needed to find a secrets management solution. Luckily the Infrastructure team already maintains a `HashiCorp Vault` cluster for internal use.
 
@@ -138,6 +142,7 @@ The team did some research about `Vault` and learned, that they can store the da
 After getting access to `Vault` a team member put the credentials in the already existing `Kvv2` engine `secrets`:
 
 ```bash
+# write secrets to Vault
 > vault kv put secret/database/postgres username=postgres password=P@ssw0rd
 ======== Secret Path ========
 secret/data/database/postgres
@@ -151,6 +156,7 @@ deletion_time      n/a
 destroyed          false
 version            1
 
+# list all secrets in KV engine
 > vkv export -p secret --show-values
 secret/ [desc=key/value secret storage] [type=kv2]
 └── database
@@ -169,7 +175,7 @@ The installation was fairly easy. They simply had to use the helm chart to insta
 Then, according to the [docs](https://external-secrets.io/latest/provider/hashicorp-vault/), a CRD of type `SecretStore` that specifies the connection to the Vault and the path to the `KVv2` secrets engine was required:
 <!--- {{ file "manifests/esm-secret-store-token.yml" | truncate | code "yaml" }} --->
 
-Lastly, an `ExternalSecret` CRD was required that references the `SecretStore` and specifies the Kvv2 secret to be a synchronized to a `Kubernetes` secret:
+Lastly, an `ExternalSecret` CRD was required that references the `SecretStore` and specifies the Kvv2 secret to be synchronized to a `Kubernetes` secret:
 <!--- {{ file "manifests/esm-external-secret.yml" | truncate | code "yaml" }} --->
 
 Once the manifests were applied, they could see that indeed `Kubernetes` Secret named `postgres-creds` was populated containing the database credentials from Vault:
@@ -188,7 +194,7 @@ This is already looking good! Now, all that was left to do, was to reference the
 And ... et voila the `demo-app` is up and running and successfully connecting to the `postgres` DB using the credentials stored in `Vault`:
 ```bash
 > kubectl apply -f manifests/demo-app-k8s-secret.yaml
-> kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
+> kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl --fail-with-body -s localhost:9090
 DB: 172.17.0.1:5432
 User: postgres
 Password: P@ssw0rd
@@ -198,7 +204,7 @@ Ping: success
 The team was happy, they adopted `Vault` as Secrets Management Solution and no longer had to hardcode the database credentials in the `demo-app` manifest.
 All the findings from the audit were resolved and the team could focus on developing new features ... right?
 
-# Part 03: Static Credentials from HashiCorp Vault using Approle Auth and the External Secrets Manager - [⭐⭐]
+# Part 02: Static Credentials from HashiCorp Vault using Approle Auth and the External Secrets Manager - [⭐⭐]
 Well not really, after a follow-up with the Security team, it was brought up that now they don't hardcode the `postgres` credentials anymore, but they have the `base64` encoded `Vault` token in the `SecretStore` CRD and even worse, that token has access to far more secrets than required ...
 The app-team wasn't done yet. They worked together with the Infrastructure team to come up with a more secure `Vault` authentication workflow and decided to use the [`Approle`](https://developer.hashicorp.com/vault/docs/auth/approle) authentication method.
 
@@ -215,7 +221,7 @@ The `demo-app` manifest remained the same. As we can see, migrating to `Approle`
 
 ```bash
 > kubectl apply -f manifests/demo-app-k8s-secret.yaml
-> kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
+> kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl --fail-with-body -s localhost:9090
 DB: 172.17.0.1:5432
 User: postgres
 Password: P@ssw0rd
@@ -225,9 +231,9 @@ Ping: success
 The team again sought feedback from the Security team, thinking they resolved all remaining concerns about the hardcoded token.
 While security was happy they now use an authentication method which would return a `Vault` token with read-only access to the `database/postgres` path, they still had concerns about the hardcoded `Approle` credentials in the `vault-approle` `Kubernetes` secret.
 
-# Part 04: Static Credentials from HashiCorp Vault using Kubernetes Auth and the External Secrets Manager - [⭐⭐⭐]
+# Part 03: Static Credentials from HashiCorp Vault using Kubernetes Auth and the External Secrets Manager - [⭐⭐⭐]
 The app-team had to find something else ... The Infrastructure team informed them about Vaults [`Kubernetes`](https://developer.hashicorp.com/vault/docs/auth/kubernetes) authentication method, which essentially uses `Kubernetes` Service Account Token to authenticate to `Vault`.
-This way, they would not longer have to hardcode any credentials:
+This way, they would no longer have to hardcode any credentials:
 
 ![img](./img/vault-k8s-auth.webp)
 
@@ -236,7 +242,7 @@ The app-team went and created a `vault-auth` `Kubernetes` Service Account, with 
 This Service account would be used by `Vault` to verify and validate other Service Account Tokens:
 <!--- {{ file "manifests/vault-crb.yml" | truncate | code "yaml" }} --->
 
-The `Kubernetes` auth method was quickly setup for the app-teams `Kubernetes` cluster
+The `Kubernetes` auth method was quickly setup for the app-teams `Kubernetes` cluster.
 They also configured a `Kubernetes` auth role `esm` which is bound to the `postgres` policy:
 <!--- {{ file "scripts/setup-vault-k8s-auth.sh" | truncate | code "bash" }} --->
 
@@ -248,7 +254,7 @@ The `demo-app` manifest remained the same. After applying all manifests, the `de
 
 ```bash
 > kubectl apply -f manifests/demo-app-k8s-secret.yaml
-> kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl -s localhost:9090
+> kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -- curl --fail-with-body -s localhost:9090
 DB: 172.17.0.1:5432
 User: postgres
 Password: P@ssw0rd
@@ -259,7 +265,7 @@ This was great! Not only they consumed the `postgres` credentials from Vault, th
 
 **They no longer had to hardcode any static credentials in any manifests!**
 
-# Part 05: Dynamic Database credentials using the Vault Secrets Operator - [⭐⭐⭐⭐]
+# Part 04: Dynamic Database credentials using the Vault Secrets Operator - [⭐⭐⭐⭐]
 The app-team was hooked. They saw the advantage of adopting `HashiCorp Vault` and how it improved not only the security but also the time it took to securely deploy applications, not having to worry about secrets anymore.
 They wanted to further improve the workflow and learned about the [`Database`](https://www.vaultproject.io/docs/secrets/databases) secrets engine. and figured, now where they are already authenticated to `Vault`, why not use dynamic credentials for the `postgres` database as well?
 
@@ -271,7 +277,7 @@ The `database` secrets engine, is able to automatically generate and revoke cred
 The Infrastructure team enabled the secrets engine and configured the app-teams database in `Vault` (`demo-app-db`) and provided them with a `postgres` role:
 <!--- {{ file "scripts/setup-vault-db.sh" | truncate | code "bash" }} --->
 
-The tested the connection and where able to generate short-lived `postgres` credentials using `Vault`:
+Thy tested the connection and were able to generate short-lived `postgres` credentials using `Vault`:
 
 ```bash
 > vault read database/creds/postgres
@@ -286,7 +292,7 @@ username           v-token-postgres-Zv02fNPCyfXg5gzM3Jzb-1736064877
 
 ## Setup Vault Secrets Operator
 But there was one problem... The External Secrets Manager does not work for dynamic secrets, only for KV secrets...
-Luckily, the team found out about the [`Vault Secrets Operator`](https://developer.hashicorp.com/vault/tutorials/kubernetes/vault-secrets-operator) (`VSO`) a native `Vault` operator provided by HashiCorp.
+Luckily, the team found out about the [`Vault Secrets Operator`](https://developer.hashicorp.com/vault/tutorials/kubernetes/vault-secrets-operator) (`VSO`) a native `Vault` operator provided by HashiCorp:
 
 ![img](./img/vso.webp)
 
@@ -302,7 +308,7 @@ Now they just had to update the `demo-app` deployment manifest to use the `dynam
 After applying, the checked the `demo-app` and saw that indeed now the `postgres` credentials were dynamically created by `Vault`!:
 ```bash
 > kubectl apply -f manifests/demo-app-vso.yaml
-> kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -c vault-from-zero-to-hero -- curl -s localhost:9090
+> kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -c vault-from-zero-to-hero -- curl --fail-with-body -s localhost:9090
 DB: 172.17.0.1:5432
 User: v-kubernet-postgres-ZGy2wmYeBoVJh1YVwHv2-1736122493 # user generated by vault
 Password: nmeS60Lr-ygUo7mJvjOE                            # password generated by vault
@@ -311,13 +317,13 @@ Ping: success
 
 Very cool! No hardcoded credentials required in order to authenticate to `Vault` and provided the `demo-app` with short-lived dynamic `postgres` credentials.
 
-# Part 06: Inject Dynamic Database credentials during runtime using the Vault Agent Injector - [⭐⭐⭐⭐⭐]
-But at this point the app-team asked them self, do we even need `Kubernetes` secrets at this point?
+# Part 05: Inject Dynamic Database credentials during runtime using the Vault Agent Injector - [⭐⭐⭐⭐⭐]
+But at this point the app-team asked themselves, do we even need `Kubernetes` secrets at this point?
 If `Vault` is generating the secrets, why not passing it to the `demo-app` deployment directly? instead of referencing a `Kubernetes` secret?
 
 This can be done using the [`Vault Agent Injector`](https://developer.hashicorp.com/vault/docs/platform/k8s/injector) (`VAI`).
 A clever workflow, that when a Pod has certain Annotations defined, injects a Sidecar Container using Mutating Webhooks.
-That container (its a `Vault` container in agent mode) then authenticates to `Vault` and writes the secrets to the disk, where the app container can consume it.
+That container (its a `Vault` container in agent mode) then authenticates to `Vault` and writes the secrets to the disk, where the app container can consume it:
 
 ![img](./img/vai.webp)
 
@@ -331,7 +337,7 @@ All they had to do, was to define the required annotations in the `demo-app` man
 And once applied, like magic, the database credentials are injected during runtime, not using any `Kubernetes` secret:
 ```bash
 > kubectl apply -f manifests/demo-app-vai.yaml
-> kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -c vault-from-zero-to-hero -- curl -s localhost:9090
+> kubectl exec $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}') -c vault-from-zero-to-hero -- curl --fail-with-body -s localhost:9090
 DB: 172.17.0.1:5432
 User: v-kubernet-postgres-ZGy2wmYeBoVJh1YVwHv2-1736122493
 Password: nmeS60Lr-ygUo7mJvjOE
@@ -342,7 +348,7 @@ They could now scale up the deployment to 5 replicas, to show that now each pod 
 ```bash
 > kubectl scale deployment demo-app --replicas=5
 > for pod in $(kubectl get po -l app=demo-app -o jsonpath='{.items[*].metadata.name}');\
-  do echo $pod && kubectl exec $pod -c vault-from-zero-to-hero -- curl -s localhost:9090;\
+  do echo $pod && kubectl exec $pod -c vault-from-zero-to-hero -- curl --fail-with-body -s localhost:9090;\
   done
 demo-app-57d64bdd8f-57h5v
 DB: 172.17.0.1:5432

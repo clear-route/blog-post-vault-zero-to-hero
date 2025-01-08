@@ -15,7 +15,7 @@ helm install vai hashicorp/vault \
     --set="injector.enabled=true" \
     --set="server.enabled=false"
 
-# wait for the ESM pods to be ready
+# wait for the VAI pods to be ready
 kubectl wait \
    --for=condition=ready pod \
    -l app.kubernetes.io/instance=vai \

@@ -41,7 +41,7 @@ jobs:
       - name: deploy
         run: |
           set -ex
-          make status-quo
+          make part-00
 
   # ESM with Token auth
   part-01:
