@@ -2,6 +2,7 @@
 
 # Start Vault Container
 docker run -d --rm \
+	--add-host host.docker.internal:host-gateway \
 	--cap-add=IPC_LOCK \
 	--name vault \
 	-p 8200:8200 \

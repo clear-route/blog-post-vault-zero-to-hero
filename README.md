@@ -33,6 +33,9 @@ This `demo-app` will be used throughout this post to demonstrate how the databas
 You are welcome to perform all the steps mentioned here by yourself.
 I will describe how to set up all components and perform all configurations locally using `docker` and `kind`.
 
+## TLDR
+If you're too lazy to follow the instructions, just check out the [`E2E`](https://github.com/clear-route/hashicorp-vault-from-zero-to-hero/actions/workflows/e2e.yml?query=branch%3Amain) Github Action pipelines that run all the steps mentioned in this blog post (navigate to the `deploy` step).
+
 ## Prerequisites
 To follow the instructions, you will need the following tools installed:
 
@@ -104,6 +107,7 @@ Lastly, a `Vault` instance is required. I will use the `Vault` `docker` containe
 
 # Start Vault Container
 docker run -d --rm \
+	--add-host host.docker.internal:host-gateway \
 	--cap-add=IPC_LOCK \
 	--name vault \
 	-p 8200:8200 \
@@ -113,11 +117,10 @@ docker run -d --rm \
 ```
 
 Once you set the Vault environment vars:
-<!--- {{ file ".envrc" | code "bash" }} --->
+<!--- {{ file ".envrc" | truncate | code "bash" }} --->
 ```bash
 export VAULT_ADDR="http://127.0.0.1:8200"
 export VAULT_TOKEN="root"
-
 ```
 
 a `vault status` should return a healthy `Vault` instance:
@@ -182,13 +185,13 @@ spec:
           ports:
             - containerPort: 9090
           env:
-            # This is bad - do not do this!
             - name: DB_HOST
-              value: host.docker.internal
+              value: "172.17.0.1"
             - name: DB_PORT
               value: "5432"
             - name: DB_USER
               value: postgres
+            # This is bad - do not do this!
             - name: DB_PASSWORD
               value: P@ssw0rd
             - name: DB_NAME
@@ -782,6 +785,12 @@ The Vault Agent Injector was quickly installed using `helm`:
 <!--- {{ file "scripts/setup-vai.sh" | truncate | code "bash" }} --->
 ```bash
 # scripts/setup-vai.sh
+
+# install the VSO Helm chart
+helm repo add hashicorp https://helm.releases.hashicorp.com
+
+# fetch charts
+helm repo update
 
 # install the  Helm chart
 helm install vai hashicorp/vault \
